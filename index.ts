@@ -13,8 +13,27 @@ const postgres = new Client({
 postgres.connect();
 
 app.get('/api/art', async (req, res) => {
-  const response = await postgres.query('SELECT NOW() as now');
-  res.send(response)
+  console.log(req.query)
+  if(isNaN(Number(req.query.page_size))) {
+    res.status(400).send('pageSize is not a number');
+  }
+  if(isNaN(Number(req.query.page_offset))) {
+    res.status(400).send('pageOffset is not a number');
+  }
+
+  const pageSize = Number(req.query.page_size)
+  const pageOffset = Number(req.query.page_offset)
+
+  if(pageSize > 100) {
+    res.status(400).send('pageSize is over 100');
+  }
+  const response = await postgres.query(`
+    SELECT * FROM art
+    ORDER BY id
+    LIMIT $1
+    OFFSET $2;
+  `, [pageSize, pageOffset]);
+  res.send(response.rows);
 });
 
 app.get('/api/art/:id', (req, res) => {
