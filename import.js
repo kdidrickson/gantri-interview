@@ -47,6 +47,8 @@ CREATE TABLE comments (
   id serial PRIMARY KEY,
   user_id INT,
   FOREIGN KEY (user_id) REFERENCES users(id),
+  art_id INT,
+  FOREIGN KEY (art_id) REFERENCES art(id),
   name VARCHAR(255),
   content TEXT
 );
@@ -57,12 +59,21 @@ CREATE TABLE comments (
   }))
   .on("data", async (data) => {
     const query = formatObjectToPostgresQuery(data);
-    // console.log(query)
     try {
       await postgres.query(query);
     } catch(e) {
       console.log(e, query)
     }
+  })
+  .on("close", () => {
+    postgres.query(`
+      INSERT INTO users (name, age, location) VALUES ('Allison Johnson', 30, 'New York, NY');
+      INSERT INTO users (name, age, location) VALUES ('Ahren', 24, 'San Francisco');
+      INSERT INTO users (name, age, location) VALUES ('John', 28, 'San Francisco');
+      INSERT INTO comments (name, content, art_id) VALUES ('John', 'This is rad', 10001);
+      INSERT INTO comments (content, art_id, user_id) VALUES ('This is super cool', 10001, 1);
+    `);
+    console.log("import complete");
   });
 });
 
@@ -78,32 +89,3 @@ function formatObjectToPostgresQuery(object) {
 
   return query;
 }
-
-
-
-// const csvStream = fastcsv
-//   .parse()
-//   .on('data', function (data) {
-//     csvData.push(data);
-//   })
-//   .on('end', function () {
-//     // Remove the header row (if present)
-//     const header = csvData.shift();
-//     const query = {
-//     text: `INSERT INTO art (${header.join(', ')}) VALUES ($1, $2, $3, ...);`,
-//     values: [],
-//     };
-
-//     csvData.forEach(row => {
-//         console.log(row)
-//     query.values = row;
-//     pool.query(query, (err, res) => {
-//         if (err) {
-//             throw err;
-//         }
-//         console.log(`Row inserted: ${res.rowCount}`);
-//     });
-//     });
-//   });
-
-// stream.pipe(csvStream);
