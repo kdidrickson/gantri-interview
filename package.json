@@ -4,7 +4,7 @@
   "description": "Coding interview for Gantri",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node index.ts"
+    "dev": "npm install -g nodemon ts-node && nodemon --exec ts-node index.ts"
   },
   "repository": {
     "type": "git",

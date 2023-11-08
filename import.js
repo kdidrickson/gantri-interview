@@ -12,19 +12,19 @@ const postgres = new Client({
 postgres.connect();
 
 postgres.query(`
-DROP TABLE IF EXISTS art;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS art;
 CREATE TABLE art (
   id serial PRIMARY KEY,
   accession_number VARCHAR(50) UNIQUE NOT NULL,
   artist VARCHAR(255),
   artistRole VARCHAR(255),
   artistId INT,
-  title VARCHAR(255),
-  dateText VARCHAR(255),
-  medium VARCHAR(255),
-  creditLine VARCHAR(255),
+  title VARCHAR(1000),
+  dateText VARCHAR(1000),
+  medium VARCHAR(1000),
+  creditLine VARCHAR(1000),
   year INT,
   acquisitionYear INT,
   dimensions VARCHAR(255),
@@ -32,10 +32,10 @@ CREATE TABLE art (
   height INT,
   depth INT,
   units VARCHAR(255),
-  inscription VARCHAR(255),
-  thumbnailCopyright VARCHAR(255),
-  thumbnailUrl VARCHAR(255),
-  url VARCHAR(255)
+  inscription VARCHAR(1000),
+  thumbnailCopyright VARCHAR(1000),
+  thumbnailUrl VARCHAR(1000),
+  url VARCHAR(1000)
 );
 CREATE TABLE users (
   id serial PRIMARY KEY,
@@ -52,7 +52,8 @@ CREATE TABLE comments (
   name VARCHAR(255),
   content TEXT
 );
-`).then(() => {
+`).then(async () => {
+  let i = 1;
   fs.createReadStream("/workspaces/gantri-interview/the-tate-collection.csv")
   .pipe(csvParser({
     separator: ';',
@@ -61,19 +62,22 @@ CREATE TABLE comments (
     const query = formatObjectToPostgresQuery(data);
     try {
       await postgres.query(query);
+      process.stdout.write(`${Math.round(i/69200*100)}% imported\r`);
+      i++;
     } catch(e) {
       console.log(e, query)
     }
   })
-  .on("close", () => {
-    postgres.query(`
+  .on("end", async () => {
+    await postgres.query(`
       INSERT INTO users (name, age, location) VALUES ('Allison Johnson', 30, 'New York, NY');
       INSERT INTO users (name, age, location) VALUES ('Ahren', 24, 'San Francisco');
       INSERT INTO users (name, age, location) VALUES ('John', 28, 'San Francisco');
       INSERT INTO comments (name, content, art_id) VALUES ('John', 'This is rad', 10001);
       INSERT INTO comments (content, art_id, user_id) VALUES ('This is super cool', 10001, 1);
     `);
-    console.log("import complete");
+    console.log('import successful!')
+    process.exit(0);
   });
 });
 
@@ -81,7 +85,7 @@ CREATE TABLE comments (
 function formatObjectToPostgresQuery(object) {
   const columns = Object.keys(object).join(', ');
   const values = Object.values(object).map(value => {
-    value = isNaN(Number(value)) ? value.replace(/'/g, "''") : Number(value);
+    value = isNaN(Number(value)) || Number(value) === Infinity ? value.replace(/'/g, "''") : Number(value);
     return typeof value === 'string' ? `'${value}'` : value
   });
 
