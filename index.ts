@@ -29,6 +29,7 @@ app.get('/api/art', async (req, res) => {
     WITH art_comments AS (
         SELECT
             comments.id AS id,
+            comments.user_id as user_id,
             art_id,
             content,
             CASE WHEN comments.user_id IS NULL THEN comments.name ELSE users.name END as name
@@ -41,13 +42,15 @@ app.get('/api/art', async (req, res) => {
         title,
         artist,
         year,
+        CASE WHEN NOT EXISTS (SELECT 1 FROM art_comments WHERE art_comments.art_id = art.id) THEN jsonb_build_array() ELSE
         jsonb_agg(
             json_build_object(
                 'id', art_comments.id,
                 'name', art_comments.name,
-                'content', art_comments.content
+                'content', art_comments.content,
+                'userID', art_comments.user_id
             )
-        ) as comments
+        ) END as comments
     FROM art
     LEFT JOIN art_comments ON art.id = art_comments.art_id
     GROUP BY art.id
